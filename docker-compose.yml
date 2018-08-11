@@ -1,0 +1,44 @@
+version: '3.5'
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+  wpdbx:
+    container_name: wpdbx
+    image: mysql:latest
+    volumes:
+      - wpdbx:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: wpdbx
+      MYSQL_USER: wpxadmin
+      MYSQL_PASSWORD: password
+  wpx:
+    container_name: wpx
+    depends_on:
+      - wpdbx
+    image: wordpress:latest
+    expose: 
+      - 80
+    restart: always
+    environment:
+      VIRTUAL_HOST: wpx.com
+      WORDPRESS_DB_HOST: wpdbx:3306
+      WORDPRESS_DB_NAME: wpdbx
+      WORDPRESS_DB_USER: wpxadmin
+      WORDPRESS_DB_PASSWORD: password
+    working_dir: /var/www/html
+    volumes:
+      - ./wp-content:/var/www/html/wp-content
+      - ./uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+volumes:
+    wpdbx:
+networks:
+  default:
+    external:
+      name: nginx-proxy
